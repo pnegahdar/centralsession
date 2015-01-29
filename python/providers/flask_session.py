@@ -1,39 +1,35 @@
 from __future__ import unicode_literals
 
 from datetime import timedelta
-from uuid import uuid4
-from redis import Redis
 from werkzeug.datastructures import CallbackDict
 from flask.sessions import SessionInterface, SessionMixin
 
 from python.session import SessionBackend
 
 
-def get_backend():
-    redis_uri = app.config['CENTRAL_SESSION_REDIS_URI']
+def get_backend(redis_uri):
     return SessionBackend(redis_uri)
 
 
-backend = get_backend()
-
-class RedisSession(CallbackDict, SessionMixin):
-
+class CentralSession(CallbackDict, SessionMixin):
     def __init__(self, initial=None, sid=None, new=False):
         def on_update(self):
             self.modified = True
+
         CallbackDict.__init__(self, initial, on_update)
         self.sid = sid
         self.new = new
         self.modified = False
 
 
-class RedisSessionInterface(SessionInterface):
+class CentralSessionInterface(SessionInterface):
+    session_class = CentralSession
 
-    def __init__(self):
-        self.backend = get_backend()
+    def __init__(self, redis_uri):
+        self.backend = get_backend(redis_uri)
 
     def generate_sid(self):
-        return str(uuid4())
+        return self.backend._get_random_key(32)
 
     def get_redis_expiration_time(self, app, session):
         if session.permanent:
@@ -45,25 +41,22 @@ class RedisSessionInterface(SessionInterface):
         if not sid:
             sid = self.generate_sid()
             return self.session_class(sid=sid, new=True)
-        val = self.redis.get(self.prefix + sid)
-        if val is not None:
-            data = self.serializer.loads(val)
-            return self.session_class(data, sid=sid)
+        val = self.backend.get_session(sid)
+        if val:
+            return self.session_class(val, sid=sid)
         return self.session_class(sid=sid, new=True)
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
         if not session:
-            self.redis.delete(self.prefix + session.sid)
+            self.backend.delete_session(session.sid)
             if session.modified:
                 response.delete_cookie(app.session_cookie_name,
                                        domain=domain)
             return
         redis_exp = self.get_redis_expiration_time(app, session)
         cookie_exp = self.get_expiration_time(app, session)
-        val = self.serializer.dumps(dict(session))
-        self.redis.setex(self.prefix + session.sid, val,
-                         int(redis_exp.total_seconds()))
+        self.backend.save(session.sid, dict(session), int(redis_exp.total_seconds()))
         response.set_cookie(app.session_cookie_name, session.sid,
                             expires=cookie_exp, httponly=True,
                             domain=domain)

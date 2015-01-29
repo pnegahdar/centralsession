@@ -32,8 +32,8 @@ Install
 Config:
 
     from centralsession.python.providers import flask_session
-    app.config['CENTRAL_SESSION_REDIS_URI'] = 'redis://localhost:6479/0'
-    app.session_interface = flask_session.RedisSessionInterface()
+    redis_uri =  'redis://localhost:6479/0'
+    app.session_interface = flask_session.CentralSessionInterface(redis_uri)
 
 
 ### Spec ###
