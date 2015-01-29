@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+
 from django.contrib.sessions.backends.base import SessionBase
 from django.conf import settings
 
