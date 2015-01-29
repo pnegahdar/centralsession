@@ -7,8 +7,36 @@ The app is designed to be pluggable with new frameworks etc and is backed by red
 
 Note since this only currently supports a cache backend hmac signing as needed with traditional cookie based storage is unnecessary
 
+### Usage ###
 
-### Standard API (langauge agnostic, pseudocode) ###
+#### Django ####
+
+Install
+
+    pip install centralsession
+
+
+Settings.py
+
+    CENTRAL_SESSION_REDIS_URI = 'redis://localhost:6479/0'
+    SESSION_ENGINE = 'central_session.providers.django_session'
+
+
+#### Flask ####
+
+Install
+
+    pip install centralsession
+
+
+Config:
+
+    from centralsession.python.providers import flask_session
+    app.config['CENTRAL_SESSION_REDIS_URI'] = 'redis://localhost:6479/0'
+    app.session_interface = flask_session.RedisSessionInterface()
+
+
+### Spec ###
 
 Always use standard json serializer/deserializer nothing custom.
 
@@ -84,20 +112,4 @@ proc:
 *Note the python implementation in python/session.py is probably most useful here*
 
 
-### Usage ###
-
-#### Django ####
-
-Install
-
-    pip install centralsession
-
-
-Settings.py
-
-    CENTRAL_SESSION_REDIS_URI = 'redis://localhost:6479/0'
-    SESSION_ENGINE = 'central_session.providers.django_session'
-
-
-#### Flask ####
 

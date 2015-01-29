@@ -114,10 +114,3 @@ class SessionBackend():
     def delete_session(self, session_key):
         self.redis_con.delete(session_key)
         return True
-
-
-
-
-
-
-
