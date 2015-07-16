@@ -1,9 +1,7 @@
 CentralSession
 ==============
 
-[![Build Status](https://travis-ci.org/pnegahdar/centralsession.svg?branch=master)](https://travis-ci.org/pnegahdar/centralsession)
-
-[![Coverage Status](https://coveralls.io/repos/pnegahdar/centralsession/badge.svg?branch=master&service=github)](https://coveralls.io/github/pnegahdar/centralsession?branch=master)
+[![Build Status](https://travis-ci.org/pnegahdar/centralsession.svg?branch=master)](https://travis-ci.org/pnegahdar/centralsession) [![Coverage Status](https://coveralls.io/repos/pnegahdar/centralsession/badge.svg?branch=master&service=github)](https://coveralls.io/github/pnegahdar/centralsession?branch=master)
 
 Service architecture needs a centralized session store for various frameworks and languages.
 
@@ -19,11 +17,13 @@ Install
 
     pip install centralsession
 
-
 Settings.py
-
-    CENTRAL_SESSION_REDIS_URI = 'redis://localhost:6479/0'
-    SESSION_ENGINE = 'central_session.providers.django_session'
+    
+    INSTALLED_APPS += ('centralsession',)
+     
+    CENTRAL_SESSION_KEY_PREFIX = 'centralsession'
+    CENTRAL_SESSION_REDIS_URI = 'redis://localhost:6379'
+    SESSION_ENGINE = 'centralsession.django_session'
 
 
 #### Flask ####
@@ -35,8 +35,8 @@ Install
 
 Config:
 
-    from centralsession.python.providers import flask_session
-    redis_uri =  'redis://localhost:6479/0'
+    from centralsession import flask_session
+    redis_uri =  'redis://localhost:6379/0'
     app.session_interface = flask_session.CentralSessionInterface(redis_uri)
 
 
