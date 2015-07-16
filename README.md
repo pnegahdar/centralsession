@@ -1,6 +1,10 @@
 CentralSession
 ==============
 
+[![Build Status](https://travis-ci.org/pnegahdar/centralsession.svg?branch=master)](https://travis-ci.org/pnegahdar/centralsession)
+
+[![Coverage Status](https://coveralls.io/repos/pnegahdar/centralsession/badge.svg?branch=master&service=github)](https://coveralls.io/github/pnegahdar/centralsession?branch=master)
+
 Service architecture needs a centralized session store for various frameworks and languages.
 
 The app is designed to be pluggable with new frameworks etc and is backed by redis.
