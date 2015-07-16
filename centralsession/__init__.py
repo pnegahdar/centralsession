@@ -1,1 +1,1 @@
-from __future__ import unicode_literals
+from centralsession.version import __version__

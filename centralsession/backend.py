@@ -1,10 +1,10 @@
-from __future__ import unicode_literals
 import random
 import string
 import json
 import functools
 
 import redis
+
 
 DneError = LookupError("The session does not yet exists. Create one using create_key")
 
@@ -27,16 +27,22 @@ def deserialize(data):
     return json.loads(data)
 
 
-class SessionBackend():
-    def __init__(self, redis_uri):
+class SessionBackend(object):
+    def __init__(self, redis_uri, key_prefix='centralsession'):
         self.redis_con = redis.from_url(redis_uri)
-
+        self.key_prefix = key_prefix
 
     def _get_random_key(self, len=32):
         allowed_chars = string.ascii_letters + string.digits
         randomizer = random.SystemRandom()
         return ''.join((randomizer.choice(allowed_chars) for _ in xrange(len)))
 
+    def get_full_key(self, key):
+        """
+        Grabs the key with the prefix
+        :return: string
+        """
+        return "{}:{}".format(self.key_prefix, key)
 
     def create_session(self, key, expires):
         """
@@ -47,7 +53,7 @@ class SessionBackend():
         expires = int(expires)
         if not key:
             key = self._get_random_key()
-        self.redis_con.set(key, json.dumps({}), expires)
+        self.redis_con.set(self.get_full_key(key), json.dumps({}), expires)
         return key
 
 
@@ -68,7 +74,7 @@ class SessionBackend():
 
 
     def exists(self, session_key):
-        return self.redis_con.exists(session_key)
+        return self.redis_con.exists(self.get_full_key(session_key))
 
     def set_key(self, session_key, data_key, data_value):
         """
@@ -78,14 +84,14 @@ class SessionBackend():
         :param data_value: the value of the data being added to the session
         :return: `dict` containing the final key/value pairs
         """
-        data_raw = self.redis_con.get(session_key)
+        data_raw = self.redis_con.get(self.get_full_key(session_key))
         if not data_raw:
             raise DneError
         data = deserialize(data_raw)
         data[data_key] = data_value
-        txn_partial = functools.partial(SessionBackend._set_key_txn, session_key, data_key,
-                                        data_value)
-        return self.redis_con.transaction(txn_partial, session_key)[0]
+        txn_partial = functools.partial(SessionBackend._set_key_txn, self.get_full_key(session_key),
+                                        data_key, data_value)
+        return self.redis_con.transaction(txn_partial, self.get_full_key(session_key))
 
 
     def save(self, session_key, data, expire):
@@ -95,7 +101,7 @@ class SessionBackend():
         :param data: the data to be saved
         :param expire: when to expire the data
         """
-        self.redis_con.set(session_key, serialize(data), expire)
+        self.redis_con.set(self.get_full_key(session_key), serialize(data), expire)
         return
 
 
@@ -105,12 +111,12 @@ class SessionBackend():
         :param session_key:
         :return: the deserialized data
         """
-        data_raw = self.redis_con.get(session_key)
+        data_raw = self.redis_con.get(self.get_full_key(session_key))
         if not data_raw:
             raise DneError
         return deserialize(data_raw)
 
 
     def delete_session(self, session_key):
-        self.redis_con.delete(session_key)
+        self.redis_con.delete(self.get_full_key(session_key))
         return True

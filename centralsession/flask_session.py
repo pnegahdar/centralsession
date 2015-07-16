@@ -1,15 +1,14 @@
-from __future__ import unicode_literals
-
 from datetime import timedelta
 
 from werkzeug.datastructures import CallbackDict
 from flask.sessions import SessionInterface, SessionMixin
+from centralsession.backend import SessionBackend
 
-from python.session import SessionBackend
-
-
-def get_backend(redis_uri):
-    return SessionBackend(redis_uri)
+def get_backend(redis_uri, key_prefix=None):
+    kwargs = {}
+    if key_prefix:
+        kwargs['key_prefix'] = key_prefix
+    return SessionBackend(redis_uri, **kwargs)
 
 
 class CentralSession(CallbackDict, SessionMixin):
@@ -26,8 +25,21 @@ class CentralSession(CallbackDict, SessionMixin):
 class CentralSessionInterface(SessionInterface):
     session_class = CentralSession
 
-    def __init__(self, redis_uri):
-        self.backend = get_backend(redis_uri)
+    def __init__(self, redis_uri, key_prefix=None, sessionid_param='sessionid',
+                 sessionid_header='sessionid'):
+        self.redis_uri = redis_uri
+        self.key_prefix = key_prefix
+        self.session_request_key = sessionid_param
+        self.session_header_field = sessionid_header
+
+    @property
+    def backend(self):
+        return get_backend(self.redis_uri, self.key_prefix)
+
+
+    def get_sessionid_from_request(self, request):
+        return request.headers.get(self.session_header_field) or request.form.get(
+            self.session_request_key) or request.args.get(self.session_request_key)
 
     def generate_sid(self):
         return self.backend._get_random_key(32)
@@ -38,7 +50,8 @@ class CentralSessionInterface(SessionInterface):
         return timedelta(days=1)
 
     def open_session(self, app, request):
-        sid = request.cookies.get(app.session_cookie_name)
+        sid = request.cookies.get(app.session_cookie_name) or self.get_sessionid_from_request(
+            request)
         if not sid:
             sid = self.generate_sid()
             return self.session_class(sid=sid, new=True)
