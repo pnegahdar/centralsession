@@ -1,6 +1,6 @@
 cov-core==1.15.0
 coverage==3.7.1
-Django==1.7.8
+Django==1.9.9
 Flask==0.10.1
 gnureadline==6.3.3
 ipdb==0.8.1

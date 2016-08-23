@@ -39,7 +39,6 @@ class SessionStore(SessionBase):
                 return backend.get_session(self.session_key)
         except LookupError:
             pass
-        self.create()
         return {}
 
     def exists(self, session_key):
